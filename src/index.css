@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-bg-top: #2B1B44;
+  --color-bg-bot: #150E22;
+  --color-paper: #FBF1E1;
+  --color-paper2: #F2E2C4;
+  --color-amber: #FFB238;
+  --color-coral: #FF6F5E;
+  --color-violet: #9B6BFF;
+  --color-ink: #20142F;
+  --color-muted: #7A6C8C;
+  --color-teal: #37B6A6;
+  --font-fredoka: 'Fredoka', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  color: #FBF1E1;
+  background: linear-gradient(180deg, #2B1B44 0%, #150E22 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Aurora blobs */
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -30px) scale(1.08); }
+}
+.aurora-blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.35;
+  animation: float 16s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Twinkle stars */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.8); }
+  50% { opacity: 0.9; transform: scale(1.2); }
+}
+.twinkle-star {
+  position: fixed;
+  border-radius: 50%;
+  background: #FBF1E1;
+  pointer-events: none;
+  animation: twinkle 2.6s ease-in-out infinite;
+}
+
+/* Screen slide animations */
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.screen-enter { animation: fadeSlide 0.45s ease forwards; }
+
+/* Badge flip-in */
+@keyframes flipIn {
+  from { transform: rotateY(90deg); }
+  to { transform: rotateY(0deg); }
+}
+.badge-flip { animation: flipIn 0.7s cubic-bezier(.2,.8,.3,1) forwards; }
+
+/* Ring animation */
+@keyframes ringFill {
+  to { stroke-dashoffset: 40; }
+}
+.ring-animate { animation: ringFill 2.4s ease forwards; }
+
+/* Checklist pop-in */
+@keyframes popIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Ken Burns photo */
+@keyframes kenburns {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+.photo-kenburns { animation: kenburns 8s ease-in-out infinite alternate; }
+
+/* Confetti fall */
+@keyframes fall {
+  to { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+}
+.confetti-piece {
+  position: fixed;
+  top: -10px;
+  z-index: 50;
+  width: 8px;
+  height: 12px;
+  opacity: 0.9;
+  animation: fall 2.6s linear forwards;
+}
+
+/* Step progress line */
+@keyframes lineGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(155, 107, 255, 0.4); border-radius: 999px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

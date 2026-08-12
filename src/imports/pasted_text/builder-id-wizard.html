@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder ID Wizard — Goa Dusk Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --bg-top:#2B1B44;
+    --bg-bot:#150E22;
+    --paper:#FBF1E1;
+    --paper-2:#F2E2C4;
+    --amber:#FFB238;
+    --coral:#FF6F5E;
+    --violet:#9B6BFF;
+    --ink:#20142F;
+    --muted:#7A6C8C;
+    --teal:#37B6A6;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Inter',sans-serif;
+    color:var(--paper);
+    background:linear-gradient(180deg,var(--bg-top) 0%, var(--bg-bot) 100%);
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  /* aurora blobs */
+  .aurora{
+    position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+  }
+  .aurora span{
+    position:absolute; border-radius:50%;
+    filter:blur(60px); opacity:0.35;
+    animation: float 14s ease-in-out infinite;
+  }
+  .aurora .a1{ width:340px;height:340px; background:var(--coral); top:-80px; left:-60px; animation-duration:16s; }
+  .aurora .a2{ width:300px;height:300px; background:var(--violet); bottom:-100px; right:-40px; animation-duration:20s; animation-delay:2s; }
+  .aurora .a3{ width:220px;height:220px; background:var(--amber); top:40%; left:60%; animation-duration:18s; animation-delay:4s; }
+  @keyframes float{
+    0%,100%{ transform:translate(0,0) scale(1); }
+    50%{ transform:translate(30px,-30px) scale(1.08); }
+  }
+
+  /* twinkles */
+  .twinkle{
+    position:fixed; z-index:0; border-radius:50%;
+    background:var(--paper); opacity:0.6; pointer-events:none;
+    animation: twinkle 2.6s ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{ opacity:0.15; transform:scale(0.8); }
+    50%{ opacity:0.9; transform:scale(1.2); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+
+  header{
+    position:relative; z-index:2; text-align:center; padding:44px 20px 18px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:0.16em;
+    color:var(--amber);
+    border:1px solid rgba(255,178,56,0.5);
+    background:rgba(32,20,47,0.5);
+    padding:6px 14px; border-radius:999px;
+    display:inline-block; margin-bottom:16px;
+  }
+  h1{
+    font-family:'Fredoka',sans-serif;
+    font-weight:600;
+    font-size:clamp(30px,5.4vw,50px);
+    margin:0 0 10px;
+    background:linear-gradient(90deg,var(--amber),var(--coral));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  header p{ color:#CFC2E0; max-width:460px; margin:0 auto; font-size:15px; }
+
+  /* Stepper */
+  .stepper{
+    position:relative; z-index:2;
+    max-width:640px; margin:30px auto 6px;
+    display:flex; justify-content:space-between;
+    padding:0 24px;
+  }
+  .step-dot{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em;
+    color:var(--muted); flex:1; position:relative;
+  }
+  .step-dot .circle{
+    width:26px;height:26px;border-radius:50%;
+    border:2px solid var(--muted);
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg-bot); font-family:'Fredoka',sans-serif; font-size:12px;
+    transition:.3s ease;
+  }
+  .step-dot.active .circle{ border-color:var(--amber); color:var(--amber); box-shadow:0 0 12px rgba(255,178,56,0.5); }
+  .step-dot.done .circle{ background:var(--amber); border-color:var(--amber); color:var(--ink); }
+  .step-dot.active, .step-dot.done{ color:var(--paper); }
+  .step-line{
+    position:absolute; top:13px; left:50%; width:100%; height:2px;
+    background:var(--muted); z-index:-1;
+  }
+  .step-dot:last-child .step-line{ display:none; }
+  .step-dot.done .step-line{ background:var(--amber); }
+
+  .wizard{
+    position:relative; z-index:2;
+    max-width:640px; margin:30px auto 100px; padding:0 24px;
+  }
+
+  .screen{ display:none; animation: fadeSlide .45s ease; }
+  .screen.active{ display:block; }
+  @keyframes fadeSlide{
+    from{ opacity:0; transform:translateY(14px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .card{
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:22px;
+    padding:32px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
+  }
+  .card h2{ font-family:'Fredoka',sans-serif; font-size:22px; margin:0 0 6px; }
+  .card .sub{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin:0 0 22px; }
+
+  /* Build type cards */
+  .type-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:520px){ .type-grid{ grid-template-columns:1fr; } }
+  .type-card{
+    border:2px solid var(--paper-2);
+    border-radius:16px; padding:20px;
+    cursor:pointer; transition:.2s ease;
+    text-align:left; background:#fff;
+  }
+  .type-card:hover{ transform:translateY(-3px); border-color:var(--amber); }
+  .type-card.selected{ border-color:var(--coral); box-shadow:0 0 0 3px rgba(255,111,94,0.2); }
+  .type-card .emoji{ font-size:26px; }
+  .type-card h3{ font-family:'Fredoka',sans-serif; font-size:16px; margin:10px 0 4px; }
+  .type-card p{ font-size:12px; color:var(--muted); margin:0; line-height:1.4; }
+
+  label{
+    display:block; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    letter-spacing:0.08em; color:var(--muted); margin:16px 0 6px;
+  }
+  label:first-of-type{ margin-top:0; }
+  input[type=text]{
+    width:100%; font-family:'Inter',sans-serif; font-weight:600; font-size:15px;
+    padding:12px 14px; border:2px solid var(--paper-2); border-radius:10px;
+    background:#fff; color:var(--ink); outline:none;
+    transition:.15s ease;
+  }
+  input[type=text]:focus{ border-color:var(--coral); box-shadow:0 0 0 3px rgba(255,111,94,0.15); }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+  .dropzone{
+    margin-top:8px; border:2px dashed var(--muted); border-radius:14px;
+    padding:24px 16px; text-align:center; cursor:pointer; background:var(--paper-2);
+    transition:.2s ease;
+  }
+  .dropzone:hover, .dropzone.drag{ border-color:var(--coral); background:#fff; }
+  .dropzone .main{ font-weight:700; font-size:14px; }
+  .dropzone .hint{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); margin-top:4px; }
+  #photoInput{ display:none; }
+
+  /* Frame picker */
+  .frame-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px; }
+  @media(max-width:520px){ .frame-grid{ grid-template-columns:1fr 1fr; } }
+  .frame-opt{
+    border:2px solid var(--paper-2); border-radius:14px; padding:12px;
+    cursor:pointer; text-align:center; background:#fff; transition:.2s ease;
+  }
+  .frame-opt:hover{ transform:translateY(-2px); }
+  .frame-opt.selected{ border-color:var(--violet); box-shadow:0 0 0 3px rgba(155,107,255,0.2); }
+  .frame-opt .swatch{
+    height:60px; border-radius:8px; margin-bottom:8px;
+    background:linear-gradient(135deg,var(--amber),var(--coral));
+  }
+  .frame-opt.f2 .swatch{ background:linear-gradient(135deg,var(--violet),var(--teal)); }
+  .frame-opt.f3 .swatch{ background:linear-gradient(135deg,var(--teal),var(--amber)); }
+  .frame-opt span{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; }
+
+  .btn-row{ display:flex; gap:12px; margin-top:26px; }
+  .btn{
+    font-family:'Fredoka',sans-serif; font-weight:600; font-size:15px;
+    padding:13px 20px; border-radius:12px; border:none; cursor:pointer;
+    position:relative; overflow:hidden; transition:transform .12s ease;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn-primary{ background:linear-gradient(90deg,var(--amber),var(--coral)); color:var(--ink); flex:1; }
+  .btn-ghost{ background:transparent; color:var(--ink); border:2px solid var(--paper-2); }
+  .btn-primary::after{
+    content:''; position:absolute; inset:0; background:rgba(255,255,255,0.35);
+    transform:translateX(-100%); transition:transform .5s ease;
+  }
+  .btn-primary:hover::after{ transform:translateX(100%); }
+
+  /* Generating screen */
+  .gen-wrap{ text-align:center; padding:24px 10px; }
+  .ring-wrap{ position:relative; width:140px; height:140px; margin:0 auto 20px; }
+  .ring-wrap svg{ transform:rotate(-90deg); }
+  .ring-bg{ fill:none; stroke:var(--paper-2); stroke-width:8; }
+  .ring-fg{
+    fill:none; stroke:url(#ringGrad); stroke-width:8; stroke-linecap:round;
+    stroke-dasharray:377; stroke-dashoffset:377;
+    animation: ringFill 2.4s ease forwards;
+  }
+  @keyframes ringFill{ to{ stroke-dashoffset:40; } }
+  .ring-wrap .pct{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Fredoka',sans-serif; font-size:22px; color:var(--ink);
+  }
+  .gen-title{ font-family:'Fredoka',sans-serif; font-size:20px; margin-bottom:14px; }
+  .checklist{ text-align:left; max-width:260px; margin:0 auto; }
+  .checklist li{
+    list-style:none; font-family:'IBM Plex Mono',monospace; font-size:12px;
+    padding:6px 0; color:var(--muted); display:flex; align-items:center; gap:8px;
+    opacity:0; animation:popIn .4s ease forwards;
+  }
+  .checklist li:nth-child(1){ animation-delay:.2s; }
+  .checklist li:nth-child(2){ animation-delay:.8s; }
+  .checklist li:nth-child(3){ animation-delay:1.4s; }
+  .checklist li:nth-child(4){ animation-delay:2.0s; }
+  @keyframes popIn{ from{opacity:0; transform:translateX(-8px);} to{opacity:1; transform:translateX(0);} }
+  .checklist li .tick{
+    width:16px;height:16px;border-radius:50%;background:var(--teal);
+    color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+
+  /* Result badge */
+  .badge-stage{ perspective:1200px; }
+  .badge{
+    background:linear-gradient(160deg,#3A2657,#241638);
+    border-radius:22px; padding:4px;
+    transform:rotateY(90deg);
+    animation: flipIn .7s cubic-bezier(.2,.8,.3,1) forwards;
+    animation-delay:.1s;
+    box-shadow:0 22px 44px rgba(0,0,0,0.4);
+  }
+  @keyframes flipIn{ to{ transform:rotateY(0deg); } }
+  .badge-inner{
+    background:var(--paper); border-radius:18px; padding:22px; color:var(--ink);
+  }
+  .badge-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .badge-logo{ display:flex; align-items:center; gap:10px; }
+  .badge-logo .mark{
+    width:32px;height:32px; border-radius:8px; background:linear-gradient(135deg,var(--amber),var(--coral));
+    display:flex;align-items:center;justify-content:center; font-family:'Fredoka',sans-serif; font-weight:700; font-size:13px;
+    color:var(--ink); transform:rotate(-6deg);
+  }
+  .badge-logo .txt{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); line-height:1.3; }
+  .badge-logo .txt b{ display:block; color:var(--ink); font-size:11px; }
+  .badge-id{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted); text-align:right; }
+
+  .photo-frame{
+    width:100%; aspect-ratio:16/10; border-radius:12px; overflow:hidden;
+    background:var(--paper-2); display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .photo-frame img{ width:100%; height:100%; object-fit:cover; animation:kenburns 8s ease-in-out infinite alternate; }
+  @keyframes kenburns{ from{ transform:scale(1); } to{ transform:scale(1.08); } }
+  .photo-frame .placeholder{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
+
+  .badge-name{ font-family:'Fredoka',sans-serif; font-size:21px; margin:14px 0 2px; }
+  .badge-title2{ font-size:12.5px; color:var(--muted); margin-bottom:12px; }
+  .badge-meta{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; padding:5px 10px; border-radius:999px;
+    background:var(--amber); color:var(--ink);
+  }
+  .chip.violet{ background:var(--violet); color:#fff; }
+  .chip.outline{ background:transparent; border:1.5px solid var(--paper-2); }
+
+  .result-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:22px; }
+  .result-actions .btn{ font-size:13px; padding:11px; }
+  .btn-outline{ background:#fff; color:var(--ink); border:2px solid var(--paper-2); }
+  .btn-teal{ background:var(--teal); color:#fff; }
+  .btn-violet{ background:var(--violet); color:#fff; }
+
+  .links-row{
+    text-align:center; margin-top:18px; font-family:'IBM Plex Mono',monospace; font-size:11px;
+  }
+  .links-row a{ color:var(--amber); text-decoration:none; margin:0 8px; cursor:pointer; }
+  .links-row a:hover{ text-decoration:underline; }
+
+  /* confetti */
+  .confetti-piece{
+    position:fixed; top:-10px; z-index:5; width:8px; height:12px; opacity:0.9;
+    animation: fall 2.6s linear forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) rotate(360deg); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+
+<header>
+  <span class="eyebrow">HH GOA'26 // ID WIZARD</span>
+  <h1>Build Your Badge,<br>Step by Step</h1>
+  <p>Pick your path, drop your details, choose a frame, and watch your Hacker House Goa badge come together.</p>
+</header>
+
+<div class="stepper">
+  <div class="step-dot active" data-step="1"><div class="circle">1</div>CHOOSE<div class="step-line"></div></div>
+  <div class="step-dot" data-step="2"><div class="circle">2</div>DETAILS<div class="step-line"></div></div>
+  <div class="step-dot" data-step="3"><div class="circle">3</div>FRAME<div class="step-line"></div></div>
+  <div class="step-dot" data-step="4"><div class="circle">4</div>BADGE<div class="step-line"></div></div>
+</div>
+
+<div class="wizard">
+
+  <!-- STEP 1 -->
+  <div class="screen active" id="screen1">
+    <div class="card">
+      <h2>Choose your build</h2>
+      <p class="sub">// solo badge, or generate for your whole squad</p>
+      <div class="type-grid">
+        <div class="type-card selected" data-type="solo">
+          <div class="emoji">🏄</div>
+          <h3>Solo Builder</h3>
+          <p>One builder, one badge. Fastest path to your ID.</p>
+        </div>
+        <div class="type-card" data-type="squad">
+          <div class="emoji">🛖</div>
+          <h3>Squad Mode</h3>
+          <p>Add your whole team and generate the full set together.</p>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="goTo(2)">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="screen" id="screen2">
+    <div class="card">
+      <h2>Your details</h2>
+      <p class="sub">// this feeds straight into your badge</p>
+
+      <label for="name">Full name</label>
+      <input type="text" id="name" placeholder="e.g. Sanskriti Maheshwari" maxlength="40">
+
+      <div class="row2">
+        <div>
+          <label for="role">Role</label>
+          <input type="text" id="role" placeholder="Builder" maxlength="24">
+        </div>
+        <div>
+          <label for="squad">Squad / team</label>
+          <input type="text" id="squad" placeholder="Individual" maxlength="24">
+        </div>
+      </div>
+
+      <label for="title">Builder title <span style="text-transform:none;font-weight:400;">(optional)</span></label>
+      <input type="text" id="title" placeholder="Full Stack Developer" maxlength="40">
+
+      <label>Photo</label>
+      <div class="dropzone" id="dropzone">
+        <div class="main">Drop a photo here, or tap to browse</div>
+        <div class="hint">head &amp; shoulders, straight-on works best</div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*">
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goTo(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goTo(3)">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="screen" id="screen3">
+    <div class="card">
+      <h2>Choose your frame</h2>
+      <p class="sub">// pick the style that fits your vibe</p>
+      <div class="frame-grid">
+        <div class="frame-opt selected f1" data-frame="sunset"><div class="swatch"></div><span>SUNSET</span></div>
+        <div class="frame-opt f2" data-frame="dusk"><div class="swatch"></div><span>DUSK</span></div>
+        <div class="frame-opt f3" data-frame="tide"><div class="swatch"></div><span>TIDE</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goTo(2)">← Back</button>
+        <button class="btn btn-primary" onclick="startGenerate()">Press it to Goa 🌅</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4a: generating -->
+  <div class="screen" id="screen4gen">
+    <div class="card gen-wrap">
+      <div class="ring-wrap">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#FFB238"/>
+              <stop offset="100%" stop-color="#FF6F5E"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="70" cy="70" r="60"/>
+          <circle class="ring-fg" cx="70" cy="70" r="60"/>
+        </svg>
+        <div class="pct">🌅</div>
+      </div>
+      <div class="gen-title">Pressing it to Goa…</div>
+      <ul class="checklist">
+        <li><span class="tick">✓</span> Locking your photo in</li>
+        <li><span class="tick">✓</span> Painting the frame</li>
+        <li><span class="tick">✓</span> Stamping your role badge</li>
+        <li><span class="tick">✓</span> Minting badge ID</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- STEP 4b: result -->
+  <div class="screen" id="screen4">
+    <div class="badge-stage">
+      <div class="badge">
+        <div class="badge-inner">
+          <div class="badge-top">
+            <div class="badge-logo">
+              <div class="mark">HH</div>
+              <div class="txt"><b>HACKER HOUSE GOA'26</b>COLLECTIBLE BUILDER BADGE</div>
+            </div>
+            <div class="badge-id" id="badgeIdOut">HH-26-0042</div>
+          </div>
+
+          <div class="photo-frame" id="photoFrame">
+            <span class="placeholder">your photo goes here</span>
+          </div>
+
+          <div class="badge-name" id="outName">Your Name</div>
+          <div class="badge-title2" id="outTitle">Builder title shows here</div>
+
+          <div class="badge-meta">
+            <span class="chip" id="outRole">Builder</span>
+            <span class="chip violet" id="outSquad">Individual</span>
+            <span class="chip outline">#FrameInGoa</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-primary" id="downloadBtn">Download PNG ⬇</button>
+      <button class="btn btn-outline" id="shareBtn">Share to X 𝕏</button>
+      <button class="btn btn-teal" id="printBtn">Print card 🖨</button>
+      <button class="btn btn-violet" id="copyBtn">Copy share link 🔗</button>
+    </div>
+
+    <div class="links-row">
+      <a onclick="resetAll()">↻ Create another ID</a> ·
+      <a onclick="goTo(1)">Build a squad instead</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // twinkles
+  const auroraLayer = document.querySelector('.aurora');
+  for(let i=0;i<18;i++){
+    const t = document.createElement('div');
+    t.className='twinkle';
+    const size = Math.random()*3+1.5;
+    t.style.width=size+'px'; t.style.height=size+'px';
+    t.style.left = Math.random()*100+'vw';
+    t.style.top = Math.random()*70+'vh';
+    t.style.animationDelay = (Math.random()*3)+'s';
+    auroraLayer.appendChild(t);
+  }
+
+  let selectedType='solo', selectedFrame='sunset';
+
+  document.querySelectorAll('.type-card').forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('.type-card').forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected');
+      selectedType = c.dataset.type;
+    });
+  });
+  document.querySelectorAll('.frame-opt').forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('.frame-opt').forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected');
+      selectedFrame = c.dataset.frame;
+    });
+  });
+
+  function goTo(step){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen'+step).classList.add('active');
+    document.querySelectorAll('.step-dot').forEach(d=>{
+      const n = parseInt(d.dataset.step);
+      d.classList.toggle('active', n===step);
+      d.classList.toggle('done', n<step);
+    });
+  }
+
+  function startGenerate(){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen4gen').classList.add('active');
+    document.querySelectorAll('.step-dot').forEach(d=>{
+      const n = parseInt(d.dataset.step);
+      d.classList.toggle('active', n===4);
+      d.classList.toggle('done', n<4);
+    });
+    // reset ring animation
+    const ring = document.querySelector('.ring-fg');
+    ring.style.animation='none'; ring.offsetHeight; ring.style.animation=null;
+
+    setTimeout(()=>{
+      syncBadge();
+      document.getElementById('screen4gen').classList.remove('active');
+      document.getElementById('screen4').classList.add('active');
+      // restart flip animation
+      const badge = document.querySelector('.badge');
+      badge.style.animation='none'; badge.offsetHeight; badge.style.animation=null;
+      launchConfetti();
+    }, 2600);
+  }
+
+  function syncBadge(){
+    const name = document.getElementById('name').value.trim() || 'Your Name';
+    const role = document.getElementById('role').value.trim() || 'Builder';
+    const squad = document.getElementById('squad').value.trim() || 'Individual';
+    const title = document.getElementById('title').value.trim() || 'Builder title shows here';
+    document.getElementById('outName').textContent = name;
+    document.getElementById('outRole').textContent = role;
+    document.getElementById('outSquad').textContent = squad;
+    document.getElementById('outTitle').textContent = title;
+    document.getElementById('badgeIdOut').textContent = 'HH-26-' + String(Math.floor(Math.random()*9000)+1000);
+  }
+
+  // photo upload
+  const dropzone = document.getElementById('dropzone');
+  const photoInput = document.getElementById('photoInput');
+  const photoFrame = document.getElementById('photoFrame');
+  function handleFile(file){
+    if(!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      photoFrame.innerHTML = `<img src="${e.target.result}" alt="your photo">`;
+    };
+    reader.readAsDataURL(file);
+  }
+  dropzone.addEventListener('click', ()=>photoInput.click());
+  photoInput.addEventListener('change', e=>handleFile(e.target.files[0]));
+  ['dragover','dragenter'].forEach(evt=>dropzone.addEventListener(evt,e=>{e.preventDefault();dropzone.classList.add('drag');}));
+  ['dragleave','drop'].forEach(evt=>dropzone.addEventListener(evt,e=>{e.preventDefault();dropzone.classList.remove('drag');}));
+  dropzone.addEventListener('drop', e=>handleFile(e.dataTransfer.files[0]));
+
+  function resetAll(){
+    document.getElementById('name').value='';
+    document.getElementById('role').value='';
+    document.getElementById('squad').value='';
+    document.getElementById('title').value='';
+    photoFrame.innerHTML = '<span class="placeholder">your photo goes here</span>';
+    goTo(1);
+  }
+
+  // confetti
+  function launchConfetti(){
+    const colors=['#FFB238','#FF6F5E','#9B6BFF','#37B6A6'];
+    for(let i=0;i<40;i++){
+      const p = document.createElement('div');
+      p.className='confetti-piece';
+      p.style.left = Math.random()*100+'vw';
+      p.style.background = colors[Math.floor(Math.random()*colors.length)];
+      p.style.animationDelay = (Math.random()*0.4)+'s';
+      p.style.animationDuration = (2+Math.random()*1.2)+'s';
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(), 3200);
+    }
+  }
+
+  // actions
+  document.getElementById('downloadBtn').addEventListener('click', ()=>{
+    const btn = document.getElementById('downloadBtn');
+    btn.textContent='Rendering…';
+    html2canvas(document.querySelector('.badge'), {backgroundColor:null, scale:2}).then(canvas=>{
+      const link=document.createElement('a');
+      link.download=(document.getElementById('outName').textContent.replace(/\s+/g,'_')||'builder')+'_hhgoa26_badge.png';
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+      btn.textContent='Download PNG ⬇';
+    });
+  });
+  document.getElementById('shareBtn').addEventListener('click', ()=>{
+    const text = encodeURIComponent(`Just built my Hacker House Goa'26 Builder ID as ${document.getElementById('outRole').textContent} 🌅 #FrameInGoa @247pmstudio`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}`,'_blank');
+  });
+  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+  document.getElementById('copyBtn').addEventListener('click', ()=>{
+    const slug = (document.getElementById('outName').textContent||'builder').toLowerCase().replace(/\s+/g,'-');
+    const fakeLink = `https://hhgoa26.app/id/${slug}`;
+    navigator.clipboard.writeText(fakeLink).then(()=>{
+      const btn = document.getElementById('copyBtn');
+      const orig = btn.textContent;
+      btn.textContent='Copied ✓';
+      setTimeout(()=>btn.textContent=orig, 1600);
+    });
+  });
+</script>
+
+</body>
+</html>
