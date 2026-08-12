@@ -473,7 +473,7 @@ export default function App() {
           background: 'linear-gradient(90deg, #FFB238, #FF6F5E)',
           WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
         }}>
-          Build Your Badge,<br />Step by Step
+          FRAME FORGE-ID GENERATORe,<br />Step by Step
         </h1>
         <p style={{ color: '#CFC2E0', maxWidth: 460, margin: '0 auto', fontSize: 15 }}>
           Pick your path, drop your details, choose a frame — generate badges for your whole squad at once.
